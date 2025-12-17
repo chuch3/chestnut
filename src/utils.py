@@ -1,7 +1,8 @@
+import argparse
+import logging
+
 import chess
 import numpy as np
-import logging
-import argparse
 
 _NUM_UNIQUE_PIECE: int = 12
 _BOARD_AXIS: int = 8  # As in 8x8 standard game grid for chess

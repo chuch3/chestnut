@@ -6,11 +6,9 @@ from utils import _BOARD_AXIS
 def _conv_block(in_f, out_f, pool_size, *args, **kwargs):
     conv = nn.Conv2d(in_f, out_f, *args, **kwargs)
     nn.init.xavier_uniform_(conv.weight)
-    nn.init.xavier_uniform_(conv.bias)
     return nn.Sequential(
         conv,
         nn.ReLU(),
-        nn.MaxPool2d(pool_size),
     )
 
 
@@ -28,33 +26,64 @@ class _Encoder(nn.Module):
         return self.encoder(X)
 
 
-class _Decoder(nn.Module):
-    def __init__(self, output_size, num_classes) -> None:
+class _PolicyHead(nn.Module):
+    def __init__(self, in_size, out_size, num_classes) -> None:
         super().__init__()
 
-        self.decoder = nn.Sequential(
+        self.policy_head = nn.Sequential(
+            nn.Conv2d(in_size, out_size=2, kernel_size=1),
+            nn.BatchNorm2d(2),
+            nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(_BOARD_AXIS**2 * output_size, 256),  
+            nn.Linear(_BOARD_AXIS**2 * out_size, 256),
             nn.ReLU(),
             nn.Dropout(p=0.5),
             nn.Linear(256, num_classes),
         )
 
     def forward(self, X):
-        return self.decoder(X)
+        return self.policy_head(X)
+
+
+class _ValueHead(nn.Module):
+    def __init__(self, in_size, out_size, num_classes) -> None:
+        super().__init__()
+
+        """
+        Following AlphaZero's paper, the head drastically reduces the dimensions
+        into feature planes. Focusing on strong encoder and smaller heads architecture 
+        for parameter efficiency.
+        """
+
+        self.head = nn.Sequential(
+            nn.Conv2d(in_size, out_size=1, kernel_size=1),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(_BOARD_AXIS**2 * out_size, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1),
+            nn.Tanh(),  # Value in range [-1, 1], hence we use tanh
+        )
+
+    def forward(self, X):
+        return self.head(X)
 
 
 class ChessModel(nn.Module):
-    def __init__(self, num_classes, enc_sizes=[13, 64, 128]) -> None:
+    def __init__(self, num_classes, enc_sizes=[13, 64, 128], self_play=False) -> None:
         super().__init__()
 
         self.num_classes = num_classes
         self.enc_sizes = enc_sizes
+        self.self_play = self_play
 
-        self.encoder = _Encoder(self.enc_sizes, self.num_classes)
-        self.decoder = _Decoder(enc_sizes[-1], self.num_classes)
+        self.encoder = _Encoder(self.enc_sizes)
+        self.value_head = _ValueHead()
+        self.policy_head = _PolicyHead(enc_sizes[-1], self.num_classes)
 
     def forward(self, X):
         X = self.encoder(X)
-        X = self.decoder(X)
-        return X
+        value = self.value_head(X) if self.self_play else None
+        policy = self.policy_head(X)
+        return policy, value

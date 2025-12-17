@@ -1,14 +1,15 @@
-import chess.svg
-
 import sys
 import traceback
 
-from utils import board_to_matrix, arg_logs
+import chess.svg
+
+from utils import arg_logs, board_to_matrix
 
 
 def main():
     board = chess.Board()
     board_to_matrix(board)
+
 
 if __name__ == "__main__":
     try:
