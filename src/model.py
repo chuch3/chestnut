@@ -5,7 +5,7 @@ from utils import _BOARD_AXIS
 
 def _conv_block(in_f, out_f, pool_size, *args, **kwargs):
     conv = nn.Conv2d(in_f, out_f, *args, **kwargs)
-    nn.init.xavier_uniform_(conv.weight)
+    nn.init.kaiming_uniform_(conv.weight, nonlinearity="relu")
     return nn.Sequential(
         conv,
         nn.ReLU(),
@@ -27,18 +27,18 @@ class _Encoder(nn.Module):
 
 
 class _PolicyHead(nn.Module):
-    def __init__(self, in_size, out_size, num_classes) -> None:
+    def __init__(self, out_size, num_classes) -> None:
         super().__init__()
-
+        self.fc1 = nn.Linear(_BOARD_AXIS**2 * out_size, 256)
+        self.fc2 = nn.Linear(256, num_classes)
+        nn.init.xavier_uniform_(self.fc1.weight)
+        nn.init.xavier_uniform_(self.fc2.weight)
         self.policy_head = nn.Sequential(
-            nn.Conv2d(in_size, out_size=2, kernel_size=1),
-            nn.BatchNorm2d(2),
-            nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(_BOARD_AXIS**2 * out_size, 256),
+            self.fc1,
             nn.ReLU(),
             nn.Dropout(p=0.5),
-            nn.Linear(256, num_classes),
+            self.fc2,
         )
 
     def forward(self, X):
@@ -46,7 +46,7 @@ class _PolicyHead(nn.Module):
 
 
 class _ValueHead(nn.Module):
-    def __init__(self, in_size, out_size, num_classes) -> None:
+    def __init__(self, out_size) -> None:
         super().__init__()
 
         """
@@ -56,9 +56,6 @@ class _ValueHead(nn.Module):
         """
 
         self.head = nn.Sequential(
-            nn.Conv2d(in_size, out_size=1, kernel_size=1),
-            nn.BatchNorm2d(1),
-            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(_BOARD_AXIS**2 * out_size, 256),
             nn.ReLU(),
@@ -79,7 +76,7 @@ class ChessModel(nn.Module):
         self.self_play = self_play
 
         self.encoder = _Encoder(self.enc_sizes)
-        self.value_head = _ValueHead()
+        self.value_head = _ValueHead(enc_sizes[-1])
         self.policy_head = _PolicyHead(enc_sizes[-1], self.num_classes)
 
     def forward(self, X):

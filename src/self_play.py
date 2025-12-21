@@ -5,9 +5,8 @@ from collections import namedtuple
 from multiprocessing import Pool, cpu_count
 
 import chess
-from tqdm import tqdm
-
 from mcts import MCTSNode
+from tqdm import tqdm
 
 _MAP_NAME: str = "movemap.pickle"
 _MAP_PATH: str = os.path.realpath(os.path.join("..", ".data", _MAP_NAME))
@@ -16,20 +15,6 @@ _MAP_PATH: str = os.path.realpath(os.path.join("..", ".data", _MAP_NAME))
 # - So we just set the traning data to be the same using the move tensor, but
 # expert data and supervised will have different training loss.
 # - We also added a more generalized move map which has to pass to other functions (gotta find this)
-
-# TODO:
-# - [ ] Fix the code for ChessExpertDataset rename
-# - [ ] Add the ChessSelfPlayDataset
-# - [ ] Run the new MCTS memory with policy vector
-#   - Require movemap (make this global in notebook) to be loaded and passed into the pooling (other code as well)
-# - [ ] Train for a bit for any errors with the new model (policy and value head), and training data
-
-# BUG:
-# - [x] Is there a way to simplify the dataset policy and supervised target to make the CNN more aligned
-#   - Make the dataset generalized for the model or have the model be specialized for each dataset
-#   - If dataset is generalized, give the same treatment of supervised target to the policy vector
-#   - Unless, we pass movemap to the multithreading pool.
-# - I need to have a move map to convert the policy (self-play equivalence for supervised's target)
 
 MCTSData = namedtuple("MCTSData", ("state", "policy", "value"))
 
@@ -68,6 +53,8 @@ def play_single_game(num_mcts_sim):
 
 def compute_policy(node):
     total_visits = sum([child._number_of_visits for child in node.children])
+    test = [child._number_of_visits / total_visits for child in node.children]
+    print(test)
     return [
         (child.parent_action.uci(), child._number_of_visits / total_visits)
         for child in node.children

@@ -7,6 +7,8 @@ import numpy as np
 _NUM_UNIQUE_PIECE: int = 12
 _BOARD_AXIS: int = 8  # As in 8x8 standard game grid for chess
 
+# Reference code : [link](https://github.com/Skripkon/chess-engine/tree/main)
+
 
 def board_to_matrix(board: chess.Board):
     move_matrix = np.zeros(

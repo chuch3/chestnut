@@ -1,16 +1,14 @@
 [project]
 name = "chess-engine"
 version = "0.1.0"
-description = "Add your description here"
+description = "Chess-engine"
 readme = "README.md"
 requires-python = ">=3.11.12"
 dependencies = [
     "chess>=1.11.2",
     "jupyter>=1.1.1",
-    "nbqa>=1.9.1",
     "numpy>=2.3.3",
-    "pandas>=2.3.3",
-    "tensorflow>=2.20.0",
+    "pyqt5>=5.15.11",
     "torch>=2.8.0",
     "tqdm>=4.67.1",
 ]

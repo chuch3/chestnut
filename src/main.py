@@ -1,22 +1,18 @@
 import sys
 import traceback
 
-import chess.svg
-
-from utils import arg_logs, board_to_matrix
+from widget import ChestnutWidget
 
 
 def main():
-    board = chess.Board()
-    board_to_matrix(board)
-
-
-if __name__ == "__main__":
     try:
-        arg_logs()
-        main()
+        chestnut = ChestnutWidget()
+        chestnut.run()
     except KeyboardInterrupt:
         sys.stderr.write("\nInterrupted\n")
     except Exception:
         traceback.print_exc(file=sys.stdout)
-    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

@@ -184,9 +184,5 @@ class TestMCTSNode(unittest.TestCase):
         # print(f"Final reward of selected node : {selected_node.game_result()}")
 
 
-def main():
-    pass
-
-
 if __name__ == "__main__":
     unittest.main()
