@@ -41,8 +41,6 @@ During prediction, the model takes a board state provided by the user and encode
 
 ### Widget 
 
-We use the PyQt5 library to create our chess user interface. First, we prompt the player to either start as the white or black chess piece. Next, we initialize our engine and move mapping to predict the next move from our model. The interface displays an SVG file of the chess board using the python-chess library and accepts user input as UCI chess notation below the graphics. If an illegal move is played, the interface will warn the user and reset the input. When a legal move is played, the board updates with the move and then passed to predict the next best move. With the engine move, the move is pushed into the board and then displayed again to the user. At each game move, the interface checks the board condition if it has gameover or not and diplays the right ending (checkmate, stalemate by repetition, etc) to the user. 
-
 We use the PyQt5 library to create the chess user interface. At first, the player can either choose to play white or black. The chess engine and move mapping are then initialized to allow the model to predict the next move. The interface displays the chessboard as an SVG graphic using the python-chess library and accepts user input in UCI notation, which is located below the board. If an illegal move is entered, the interface warns the user and resets the input. When a legal move is played, the board updates and so the model predicts the next best move. Moreover, the engine's best predicted move is then applied to the board and displayed to the user. After each move, the interface checks the board for game-ending conditions and displays the appropriate result, like checkmate, stalemate, or draw by repetitions.
 
 
