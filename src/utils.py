@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+import pickle
 
 import chess
 import numpy as np
@@ -7,9 +9,65 @@ import numpy as np
 _NUM_UNIQUE_PIECE: int = 12
 _BOARD_AXIS: int = 8  # As in 8x8 standard game grid for chess
 
+# ------------------------------------------------------------------------------#
+
+
+_EXPERT_MOVE_MAP_PATH: str = os.path.realpath(
+    os.path.join("..", "data", "move_map.pickle")
+)
+
+_SELF_PLAY_MAP_NAME: str = "movemap.pickle"
+_SELF_PLAY_MAP_PATH: str = os.path.realpath(
+    os.path.join("..", ".data", _SELF_PLAY_MAP_NAME)
+)
+
+_OLD_MODEL_NAME: str = "CHESSMODEL_CHECKPOINT_200_EPOCHS.pth.tar"
+_OLD_MODEL_PATH: str = os.path.realpath(os.path.join("..", "model", _OLD_MODEL_NAME))
+
+_EXPERT_MODEL_NAME: str = "CHESSMODEL_EXPERT_CHECKPOINT_400_EPOCHS.pth.tar"
+_EXPERT_MODEL_PATH: str = os.path.realpath(
+    os.path.join("..", "model", _EXPERT_MODEL_NAME)
+)
+
+_SELF_PLAY_MODEL_NAME: str = "CHESSMODEL_SELF_PLAY_CHECKPOINT_200_EPOCHS.pth.tar"
+_SELF_PLAY_MODEL_PATH: str = os.path.realpath(
+    os.path.join("..", "model", _SELF_PLAY_MODEL_NAME)
+)
+
+_DATASET_NAME: str = "lichess-elite"
+_DATASET_PATH: str = os.path.realpath(os.path.join("..", ".data", _DATASET_NAME))
+
+_GAMES_NAME: str = "games.pickle"
+_GAMES_PATH: str = os.path.realpath(os.path.join("..", ".data", _GAMES_NAME))
+
+_LOADED_EXPERT_GAMES_NAME: str = "load.pickle"
+_LOADED_EXPERT_GAMES_PATH: str = os.path.realpath(
+    os.path.join("..", ".data", _LOADED_EXPERT_GAMES_NAME)
+)
+
+_EXPERT_DATASET_NAME: str = "EXPERT_FINAL_DATASET.pickle"
+_EXPERT_DATASET_PATH: str = os.path.realpath(
+    os.path.join("..", ".data", _EXPERT_DATASET_NAME)
+)
+
+_SELF_PLAY_MEMORY_NAME: str = "SELF_PLAY_150SIMULATIONS_1100GAMES.pickle"
+_SELF_PLAY_MEMORY_PATH: str = os.path.realpath(
+    os.path.join("..", ".data", _SELF_PLAY_MEMORY_NAME)
+)
+
+_SELF_PLAY_DATASET_NAME: str = "SELF_PLAY_FINAL_DATASET.pickle"
+_SELF_PLAY_DATASET_PATH: str = os.path.realpath(
+    os.path.join("..", ".data", _SELF_PLAY_DATASET_NAME)
+)
+
+
+_SELF_PLAY_IDXMAP_NAME: str = "idxmovemap.pickle"
+_SELF_PLAY_IDXMAP_PATH: str = os.path.realpath(
+    os.path.join("..", ".data", _SELF_PLAY_IDXMAP_NAME)
+)
+
+
 # Reference code : [link](https://github.com/Skripkon/chess-engine/tree/main)
-
-
 def board_to_matrix(board: chess.Board):
     move_matrix = np.zeros(
         (_NUM_UNIQUE_PIECE + 1, _BOARD_AXIS, _BOARD_AXIS)
@@ -38,6 +96,17 @@ def board_to_matrix(board: chess.Board):
         )
 
     return move_matrix
+
+
+# NOTE:
+# Have it accept tuple or mutliple variables to load into it. May need to check online references.
+def pickle_load(file_name, file_path):
+    with open(file_path, "rb") as file:
+        output = pickle.load(
+            file,
+        )
+        print("=> Loaded {} from {}".format(file_name, file_path))
+    return output
 
 
 def arg_logs():

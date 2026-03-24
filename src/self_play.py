@@ -1,15 +1,12 @@
-import os
 import pickle
 import unittest
 from collections import namedtuple
 from multiprocessing import Pool, cpu_count
 
 import chess
-from mcts import MCTSNode
 from tqdm import tqdm
 
-_MAP_NAME: str = "movemap.pickle"
-_MAP_PATH: str = os.path.realpath(os.path.join("..", ".data", _MAP_NAME))
+from mcts import MCTSNode
 
 # NOTE:
 # - So we just set the traning data to be the same using the move tensor, but
@@ -53,8 +50,6 @@ def play_single_game(num_mcts_sim):
 
 def compute_policy(node):
     total_visits = sum([child._number_of_visits for child in node.children])
-    test = [child._number_of_visits / total_visits for child in node.children]
-    print(test)
     return [
         (child.parent_action.uci(), child._number_of_visits / total_visits)
         for child in node.children
@@ -74,38 +69,65 @@ class SelfPlay:
         print("{----------------------------------------}")
         print()
 
-    def build_self_play(self):
+    def run(self):
         memory = []
+
         with Pool(self.num_workers) as pool:
-            memory = list(
-                tqdm(
-                    pool.imap_unordered(
-                        play_single_game, [self.num_mcts_sim] * self.num_games
-                    ),
-                    total=self.num_games,
-                    desc="Number of Self-play MCTS Games",
-                )
+            results = tqdm(
+                pool.imap_unordered(
+                    play_single_game, [self.num_mcts_sim] * self.num_games
+                ),
+                total=self.num_games,
+                desc="Number of Self-play MCTS Games",
             )
+
+            for i, game in enumerate(results, start=1):
+                memory.append(game)
+                if i % 100 == 0 or i == self.num_games:
+                    with open(f"save_play_{700 + i}_games.pickle", "wb") as f:
+                        pickle.dump(memory, f)
+                        print(f"Checkpoint saved after {i} games")
 
         memory = [move for game in memory for move in game]
         return memory
 
 
 class TestSelfPlay(unittest.TestCase):
+    @unittest.skip
+    def test_load_memory(self):
+        with open("save_play_1100_games.pickle", "rb") as file:
+            memory1 = pickle.load(file)
+            print("=> Loaded pickle object")
+
+        memory1 = [move for game in memory1 for move in game]
+
+        with open("SELF_PLAY_DATASET_150SIMULATIONS_700GAMES.pickle", "rb") as file:
+            memory2 = pickle.load(file)
+            print("=> Loaded pickle object")
+
+        memory = memory2 + memory1
+
+        file_name = f"SELF_PLAY_DATASET_{150}SIMULATIONS_{1100}GAMES.pickle"
+
+        print(len(memory))
+        with open(file_name, "wb") as file:
+            pickle.dump(memory, file)
+            print(f"=> Saved pickle object {file_name}")
+
+    @unittest.skip
     def test_build_self_play_dataset(self):
         num_mcts_sim = 150
-        num_games = 200
+        num_games = 800
         file_name = (
             f"SELF_PLAY_DATASET_{num_mcts_sim}SIMULATIONS_{num_games}GAMES.pickle"
         )
 
         self_play = SelfPlay(num_mcts_sim=num_mcts_sim, num_games=num_games)
-        memory = self_play.build_self_play()
+        memory = self_play.run()
 
         with open(file_name, "wb") as file:
             pickle.dump(memory, file)
-
-        print(f"=> Saved pickle object {file_name}")
+            print(f"=> Saved pickle object {file_name}")
 
 
 def main():

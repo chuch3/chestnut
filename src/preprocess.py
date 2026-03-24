@@ -11,37 +11,28 @@ from tqdm import tqdm
 
 # Used to load the self-play dataset pickle.
 from self_play import MCTSData
-from utils import board_to_matrix
-
-_DATASET_NAME: str = "lichess-elite"
-_DATASET_PATH: str = os.path.realpath(os.path.join("..", ".data", _DATASET_NAME))
-
-_GAMES_NAME: str = "games.pickle"
-_GAMES_PATH: str = os.path.realpath(os.path.join("..", ".data", _GAMES_NAME))
-
-_LOADED_EXPERT_NAME: str = "load.pickle"
-_LOADED_EXPERT_PATH: str = os.path.realpath(
-    os.path.join("..", ".data", _LOADED_EXPERT_NAME)
+from utils import (
+    _DATASET_PATH,
+    _EXPERT_DATASET_NAME,
+    _EXPERT_DATASET_PATH,
+    _EXPERT_MOVE_MAP_PATH,
+    _GAMES_NAME,
+    _GAMES_PATH,
+    _LOADED_EXPERT_GAMES_NAME,
+    _LOADED_EXPERT_GAMES_PATH,
+    _SELF_PLAY_DATASET_NAME,
+    _SELF_PLAY_DATASET_PATH,
+    _SELF_PLAY_IDXMAP_NAME,
+    _SELF_PLAY_IDXMAP_PATH,
+    _SELF_PLAY_MAP_NAME,
+    _SELF_PLAY_MAP_PATH,
+    _SELF_PLAY_MEMORY_NAME,
+    _SELF_PLAY_MEMORY_PATH,
+    board_to_matrix,
 )
 
-_LOADED_SELF_PLAY_NAME: str = "SELF_PLAY_DATASET_150SIMULATIONS_200GAMES.pickle"
-_LOADED_SELF_PLAY_PATH: str = os.path.realpath(
-    os.path.join("..", ".data", _LOADED_SELF_PLAY_NAME)
-)
 
-_FINAL_SELF_PLAY_NAME: str = "SELF_PLAY_FINAL_DATASET.pickle"
-_FINAL_SELF_PLAY_PATH: str = os.path.realpath(
-    os.path.join("..", ".data", _FINAL_SELF_PLAY_NAME)
-)
-
-_MAP_NAME: str = "movemap.pickle"
-_MAP_PATH: str = os.path.realpath(os.path.join("..", ".data", _MAP_NAME))
-
-_IDXMAP_NAME: str = "idxmovemap.pickle"
-_IDXMAP_PATH: str = os.path.realpath(os.path.join("..", ".data", _IDXMAP_NAME))
-
-
-class ChessExpertDataset(Dataset):
+class ChessSelfPlayDataset(Dataset):
     def __init__(self, X, y_policy, y_value) -> None:
         super().__init__()
         self.X = X
@@ -55,7 +46,7 @@ class ChessExpertDataset(Dataset):
         return self.X[idx], self.y_policy[idx], self.y_value[idx]
 
 
-class ChessSelfPlayDataset(Dataset):
+class ChessExpertDataset(Dataset):
     def __init__(self, X, y: tuple) -> None:
         super().__init__()
         self.X = X
@@ -111,9 +102,11 @@ def load_games(games_list, load_limit):
             board.push(move)
     loaded_games = (X, y)
 
-    with open(_LOADED_EXPERT_PATH, "wb") as file:
+    with open(_LOADED_EXPERT_GAMES_PATH, "wb") as file:
         pickle.dump(loaded_games, file)
-        print(f"=> Saved pickle object {_LOADED_EXPERT_NAME} in {_LOADED_EXPERT_PATH}")
+        print(
+            f"=> Saved pickle object {_LOADED_EXPERT_GAMES_NAME} in {_LOADED_EXPERT_GAMES_PATH}"
+        )
 
     return np.array(X, dtype=np.float32), np.array(y)
 
@@ -132,24 +125,32 @@ def build_move_mapping():
 
     all_moves_sorted = sorted(list(move_set))
 
-    # Mapping of move UCI <-> index
+    # Mapping of move UCI <-> Index
     move_map = {move: idx for idx, move in enumerate(all_moves_sorted)}
     idx_map = {idx: move for move, idx in move_map.items()}
 
     return move_map, idx_map
 
 
-def load_expert_dataset(move_map):
-    with open(_LOADED_EXPERT_PATH, "rb") as games_file:
+def load_expert_dataset():
+    with open(_EXPERT_MOVE_MAP_PATH, "rb") as file:
+        move_map = pickle.load(file)
+
+    with open(_LOADED_EXPERT_GAMES_PATH, "rb") as games_file:
         X, y = pickle.load(games_file)
+        print(
+            "=> Loaded {} from {}".format(
+                _LOADED_EXPERT_GAMES_NAME, _LOADED_EXPERT_GAMES_PATH
+            )
+        )
 
     # Expert target column is a list of moves, where each move belongs to each state.
     y_idx = np.array([move_map[move] for move in y], dtype=np.float32)
 
-    X = torch.tensor(X, dtype=torch.float32)
-    y_idx = torch.tensor(y_idx, dtype=torch.long)
+    X = torch.tensor(np.array(X), dtype=torch.float32)
+    y_idx = torch.tensor(np.array(y_idx), dtype=torch.long)
 
-    return X, y_idx
+    return X, y_idx, len(move_map)
 
 
 def load_self_play_dataset(memory, move_map):
@@ -173,17 +174,20 @@ def load_self_play_dataset(memory, move_map):
 
 class TestPreprocess(unittest.TestCase):
     @unittest.skip
-    def test_build_move_mapping(self):
+    def test_build_entire_move_mapping(self):
         move_map, idx_map = build_move_mapping()
 
-        print(move_map)
-        with open(_MAP_PATH, "wb") as file:
+        with open(_SELF_PLAY_MAP_PATH, "wb") as file:
             pickle.dump(move_map, file)
-            print(f"=> Saved pickle object {_MAP_NAME} in {_MAP_PATH}")
+            print(
+                f"=> Saved pickle object {_SELF_PLAY_MAP_NAME} in {_SELF_PLAY_MAP_PATH}"
+            )
 
-        with open(_IDXMAP_PATH, "wb") as file:
+        with open(_SELF_PLAY_IDXMAP_PATH, "wb") as file:
             pickle.dump(idx_map, file)
-            print(f"=> Saved pickle object {_IDXMAP_NAME} in {_IDXMAP_PATH}")
+            print(
+                f"=> Saved pickle object {_SELF_PLAY_IDXMAP_NAME} in {_SELF_PLAY_IDXMAP_PATH}"
+            )
 
     @unittest.skip
     def test_load_games():
@@ -192,20 +196,46 @@ class TestPreprocess(unittest.TestCase):
 
         X, y = load_games(games_list, 12000)
 
-    def test_load_self_play_dataset(self):
-        with open(_LOADED_SELF_PLAY_PATH, "rb") as memory_file:
-            memory = pickle.load(memory_file)
+    @unittest.skip
+    def test_load_expert_dataset(self):
+        X, y, num_classes = load_expert_dataset()
+        expert_dataset = (X, y, num_classes)
 
-        with open(_MAP_PATH, "rb") as map_file:
+        with open(_EXPERT_DATASET_PATH, "wb") as file:
+            pickle.dump(expert_dataset, file)
+            print(
+                "=> Saved pickle object {} in {}".format(
+                    _EXPERT_DATASET_NAME, _EXPERT_DATASET_PATH
+                )
+            )
+
+    @unittest.skip
+    def test_load_self_play_dataset(self):
+        with open(_SELF_PLAY_MEMORY_PATH, "rb") as memory_file:
+            memory = pickle.load(memory_file)
+            print(
+                "=> Saved pickle object {} in {}".format(
+                    _SELF_PLAY_MEMORY_NAME, _SELF_PLAY_MEMORY_PATH
+                )
+            )
+
+        with open(_SELF_PLAY_MAP_PATH, "rb") as map_file:
             move_map = pickle.load(map_file)
+            print(
+                "=> Saved pickle object {} in {}".format(
+                    _SELF_PLAY_MAP_NAME, _SELF_PLAY_MAP_PATH
+                )
+            )
 
         X, y_policy, y_value = load_self_play_dataset(memory, move_map)
         final_self_play = (X, y_policy, y_value)
 
-        with open(_FINAL_SELF_PLAY_PATH, "wb") as file:
+        with open(_SELF_PLAY_DATASET_NAME, "wb") as file:
             pickle.dump(final_self_play, file)
             print(
-                f"=> Saved pickle object {_FINAL_SELF_PLAY_NAME} in {_FINAL_SELF_PLAY_PATH}"
+                "=> Saved pickle object {} in {}".format(
+                    _SELF_PLAY_DATASET_NAME, _SELF_PLAY_DATASET_PATH
+                )
             )
 
 

@@ -2,8 +2,49 @@
 
 Chess engine ("chess") with a brain of a nut ("nut").
 
-## How it works 
+![img](img/image.png) 
 
+Monte Carlo Tree Search (MCTS) Reinforcement Chess Engine with both Expert and Self-play Training. 
+
+## Prerequisites
+
+Ensure that your system meets the following requirements:
+* Python `>= 3.11.12`
+* `uv` (optional but recommended)
+
+```terminal
+pip install uv
+```
+
+* Required data files:
+    * `data/move_map.pickle` - move mapping used by the chess engine.
+    * `model/CHESSMODEL_CHECKPOINT_100_EPOCHS.pth.tar` - trained chess model checkpoint.
+
+These files must exist in the specified directories for the code to run correctly.
+
+## Build Instructions 
+
+Install the expert or self-play trained model [via GoFile](https://gofile.io/d/3vQ3Cx) into `chestnut/model`
+
+* Using `uv` (recommended)
+
+```terminal
+cd chestnut
+uv sync # remember to activate your existing venv
+cd src
+uv run main.py
+```
+
+* Using `pip`
+
+```terminal
+cd chestnut
+pip install -r requirements.txt
+cd src
+python main.py
+```
+
+## How it works 
 
 ### Dataset Preprocessing
 
@@ -44,39 +85,34 @@ During prediction, the model takes a board state provided by the user and encode
 We use the PyQt5 library to create the chess user interface. At first, the player can either choose to play white or black. The chess engine and move mapping are then initialized to allow the model to predict the next move. The interface displays the chessboard as an SVG graphic using the python-chess library and accepts user input in UCI notation, which is located below the board. If an illegal move is entered, the interface warns the user and resets the input. When a legal move is played, the board updates and so the model predicts the next best move. Moreover, the engine's best predicted move is then applied to the board and displayed to the user. After each move, the interface checks the board for game-ending conditions and displays the appropriate result, like checkmate, stalemate, or draw by repetitions.
 
 
-## Prerequisites
 
-Ensure that your system meets the following requirements:
-* Python `>= 3.11.12`
-* `uv` (optional but recommended)
+# Notes
 
-```terminal
-pip install uv
-```
+## Monte Carlo Tree Search with Upper Confidence Bound
 
-* Required data files:
-    * `data/move_map.pickle` - move mapping used by the chess engine.
-    * `model/CHESSMODEL_CHECKPOINT_100_EPOCHS.pth.tar` - trained chess model checkpoint.
+MCTS is used on games with extremely high branching factor that min-max algorihtms cannot handle.
 
-These files must exist in the specified directories for the code to run correctly.
+Reference : [link](https://ai-boson.github.io/mcts/)
 
-## Build Instructions 
+### Selection
 
-* Using `uv` (recommended)
+Keep selecting the best nodes (highest UCT) until the leaf node.
 
-```terminal
-cd chestnut
-uv sync # remember to activate your existing venv
-cd src
-uv run main.py
-```
+wi/ni + c*sqrt(t)/ni
 
-* Using `pip`
+wi = number of wins after the i-th move
+ni = number of simulations after the i-th move
+c = exploration parameter (theoretically equal to √2)
+t = total number of simulations for the parent node
 
-```terminal
-cd chestnut
-pip install -r requirements.txt
-cd src
-python main.py
-```
+### Expansion 
 
+When UCT is unable to find the sucessor node, it expands the tree by appending all possible state to the leaf node.
+
+### Simulation
+
+After expansion, it simulates the entire game from the selected node until the end of the game. If nodes are picked randomly, it is called light play out. Else, heavy play out uses heuristics and evaluation functions.
+
+### Backpropagation
+
+When reaching the end of a game, it traverses upwards to the root and increment visit scores for all nodes. Then, it updates win score for each node if the position of that player wins the playout. (past moves in traversed tree)

@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 from utils import _BOARD_AXIS
@@ -84,3 +85,23 @@ class ChessModel(nn.Module):
         value = self.value_head(X) if self.self_play else None
         policy = self.policy_head(X)
         return policy, value
+
+
+class ChessModelTransfer(nn.Module):
+    def __init__(
+        self, enc_sizes=[13, 64, 128], old_classes=1849, new_classes=20480
+    ) -> None:
+        super().__init__()
+        self.enc_sizes = enc_sizes
+        self.encoder = _Encoder(self.enc_sizes)
+        self.old_policy = _PolicyHead(self.enc_sizes[-1], old_classes)
+        self.new_policy = _PolicyHead(self.enc_sizes[-1], new_classes)
+
+    def forward(self, x):
+        x = self.encoder(x)
+        with torch.no_grad():
+            old_policy_x = self.old_policy(x)
+        new_policy_x = self.new_policy(x)
+        return torch.cat(
+            [old_policy_x, new_policy_x], dim=1
+        )  # Old policy weights is freezed while new policy learns with the old policy as a single vector

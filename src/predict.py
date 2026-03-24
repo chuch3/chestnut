@@ -1,39 +1,60 @@
-import os
 import pickle
 
 import chess
 import numpy as np
 import torch
 
-from old_model import ChessModel
+from model import ChessModel
 from train import load_checkpoint
-from utils import board_to_matrix
 
 # WARNING:
 # The prediction requires the move and index move map to be located into the data directory.
-
-_MOVE_MAP_PATH: str = os.path.realpath(os.path.join("..", "data", "move_map.pickle"))
-
-_MODEL_PATH: str = os.path.realpath(
-    os.path.join("..", "model", "CHESSMODEL_CHECKPOINT_100_EPOCHS.pth.tar")
+from utils import (
+    _EXPERT_MODEL_PATH,
+    _EXPERT_MOVE_MAP_PATH,
+    _SELF_PLAY_MAP_PATH,
+    _SELF_PLAY_MODEL_PATH,
+    board_to_matrix,
 )
 
 
 def start_chess_model():
-    with open(_MOVE_MAP_PATH, "rb") as file:
-        old_move_map = pickle.load(file)
+    with open(_SELF_PLAY_MAP_PATH, "rb") as file:
+        move_map = pickle.load(file)
+    loss_history = []
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = ChessModel(num_classes=len(old_move_map))
+    model = ChessModel(num_classes=len(move_map), self_play=True)
 
-    model, _, _, _ = load_checkpoint(model, file_name=_MODEL_PATH)
+    model, _, _, loss_history = load_checkpoint(
+        model, loss_history=loss_history, file_name=_SELF_PLAY_MODEL_PATH
+    )
 
-    idx_move_map = {idx: move for move, idx in old_move_map.items()}
+    idx_move_map = {idx: move for move, idx in move_map.items()}
     model.to(device)
     model.eval()
 
     return model, idx_move_map
+    """
+    with open(_EXPERT_MOVE_MAP_PATH, "rb") as file:
+        move_map = pickle.load(file)
+    loss_history = []
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = ChessModel(num_classes=len(move_map))
+
+    model, _, _, loss_history = load_checkpoint(
+        model, loss_history=loss_history, file_name=_EXPERT_MODEL_PATH
+    )
+
+    idx_move_map = {idx: move for move, idx in move_map.items()}
+    model.to(device)
+    model.eval()
+
+    return model, idx_move_map
+    """
 
 
 def predict_best_move(board: chess.Board, model: ChessModel, idx_move_map):
@@ -42,10 +63,10 @@ def predict_best_move(board: chess.Board, model: ChessModel, idx_move_map):
     move_tensor = torch.tensor(move_matrix, dtype=torch.float32).unsqueeze(0).to(device)
 
     with torch.no_grad():
-        logits = model(move_tensor)
+        policy, _ = model(move_tensor)
 
-    logits = logits.squeeze(0)
-    prob = torch.softmax(logits, dim=0).cpu().numpy()
+    policy = policy.squeeze(0)
+    prob = torch.softmax(policy, dim=0).cpu().numpy()
 
     legal_moves = list(board.legal_moves)
     legal_moves_uci = [move.uci() for move in legal_moves]

@@ -1,7 +1,6 @@
 import torch.nn as nn
 
-_NUM_UNIQUE_PIECE: int = 12
-_BOARD_AXIS: int = 8  # As in 8x8 standard game grid for chess
+from utils import _BOARD_AXIS
 
 
 def _conv_block(in_f, out_f, pool_size, *args, **kwargs):

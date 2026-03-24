@@ -7,6 +7,7 @@ requires-python = ">=3.11.12"
 dependencies = [
     "chess>=1.11.2",
     "jupyter>=1.1.1",
+    "matplotlib>=3.10.8",
     "numpy>=2.3.3",
     "pyqt5>=5.15.11",
     "torch>=2.8.0",
