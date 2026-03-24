@@ -1,10 +1,12 @@
-# Chestnut 
+# Chestnut 🌰
 
 Chess engine ("chess") with a brain of a nut ("nut").
 
 ![img](img/image.png) 
 
-Monte Carlo Tree Search (MCTS) Reinforcement Chess Engine with both Expert and Self-play Training. 
+<img src="https://raw.githubusercontent.com/chuch3/chestnut/main/img/image.png" style="width:50%; height:auto;">
+
+Monte Carlo Tree Search (MCTS) Reinforcement Learning Chess Engine Trained on Both Expert and Self-play Data. 
 
 ## Prerequisites
 
@@ -86,33 +88,33 @@ We use the PyQt5 library to create the chess user interface. At first, the playe
 
 
 
-# Notes
+## Notes
 
-## Monte Carlo Tree Search with Upper Confidence Bound
+### Monte Carlo Tree Search with Upper Confidence Bound
 
 MCTS is used on games with extremely high branching factor that min-max algorihtms cannot handle.
 
 Reference : [link](https://ai-boson.github.io/mcts/)
 
-### Selection
+#### Selection
 
 Keep selecting the best nodes (highest UCT) until the leaf node.
 
-wi/ni + c*sqrt(t)/ni
+$ \frac{w_i}{n_i} + c*\frac{\sqrt{t}}{n_i}$
 
-wi = number of wins after the i-th move
-ni = number of simulations after the i-th move
-c = exploration parameter (theoretically equal to √2)
-t = total number of simulations for the parent node
+$w_i$ = number of wins after the $i$-th move
+$n_i$ = number of simulations after the $i$-th move
+$c$ = exploration parameter (theoretically equal to √2)
+$t$ = total number of simulations for the parent node
 
-### Expansion 
+#### Expansion 
 
 When UCT is unable to find the sucessor node, it expands the tree by appending all possible state to the leaf node.
 
-### Simulation
+#### Simulation
 
 After expansion, it simulates the entire game from the selected node until the end of the game. If nodes are picked randomly, it is called light play out. Else, heavy play out uses heuristics and evaluation functions.
 
-### Backpropagation
+#### Backpropagation
 
 When reaching the end of a game, it traverses upwards to the root and increment visit scores for all nodes. Then, it updates win score for each node if the position of that player wins the playout. (past moves in traversed tree)
