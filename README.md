@@ -2,7 +2,7 @@
 
 Chess engine ("chess") with a brain of a nut ("nut").
 
-<img src="https://raw.githubusercontent.com/chuch3/chestnut/main/img/image.png" style="width:75%; height:auto;">
+<img src="https://raw.githubusercontent.com/chuch3/chestnut/main/img/image.png" style="width:50%; height:auto;">
 
 Monte Carlo Tree Search (MCTS) Reinforcement Learning Chess Engine Trained on Both Expert and Self-play Data. 
 
