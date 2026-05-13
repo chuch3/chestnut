@@ -24,7 +24,10 @@ These files must exist in the specified directories for the code to run correctl
 
 ## Build Instructions 
 
-Install the expert or self-play trained model [via GoFile](https://gofile.io/d/3vQ3Cx) into `chestnut/model`
+Install the expert or self-play trained model [via GoFile](https://gofile.io/d/6wqNuw) and extract into `chestnut/model`
+
+> [!WARNING]
+> The GoFile link may be inactive for an extended period which has to be updated by repository owner (me).
 
 * Using `uv` (recommended)
 
